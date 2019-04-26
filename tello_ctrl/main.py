@@ -16,31 +16,26 @@ class TelloScriptNode(Node):
         self.publisher_ = self.create_publisher(String, 'topic')
         self.cli = self.create_client(TelloAction, '/solo/tello_action')
         
-        timer_period = 3  # seconds
+        timer_period = 5  # seconds
         self.timer = self.create_timer(timer_period, self.timer_callback)
         self.i = 0
 
 
     def timer_callback(self):
-        msg = String()
-        msg.data = 'Hello World: %d' % self.i
-        self.publisher_.publish(msg)
-        self.get_logger().info('Publishing: "%s"' % msg.data)
-        
-        
         if(self.i % 2):
-            self.doTakeoff()
-        else:
             self.doLand()
-            
+        else:
+            self.doTakeoff()
         self.i += 1
     
 
     def doTakeoff(self):
         self.sendTelloCommand("takeoff")
+        self.get_logger().info('takeoff')
 
     def doLand(self):
         self.sendTelloCommand("land")
+        self.get_logger().info('land')
 
 
     def sendTelloCommand(self,cmd):
@@ -51,12 +46,12 @@ class TelloScriptNode(Node):
         req.cmd = cmd
         
         future = self.cli.call_async(req)
-        rclpy.spin_until_future_complete(self, future)    
+        #rclpy.spin_until_future_complete(self, future)    
         
-        if future.result() is not None:
-            self.get_logger().info(cmd + ' okay')
-        else:
-            self.get_logger().info(cmd + ' fail ' % (future.exception(),))
+        #if future.result() is not None:
+        #    self.get_logger().info(cmd + ' okay')
+        #else:
+        #    self.get_logger().info(cmd + ' fail ' % (future.exception(),))
 
 
         
