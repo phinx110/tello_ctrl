@@ -17,8 +17,7 @@ class TelloScriptNode(Node):
         self.cli = self.create_client(TelloAction, '/solo/tello_action')
         self.req = TelloAction.Request()
         self.future = None
-
-
+        self.drone_state = state_rest()
 
 
         timer_period = 1  # seconds
@@ -51,11 +50,54 @@ class TelloScriptNode(Node):
         self.future = self.cli.call_async(self.req)
 
 
+######     state machine     ######
+
+class state_rest(Object):
+    def next_state(self, input):
+
+        if(input == "takeoff"):
+            return state_takeoff()
+        return self
+
+class state_takeoff(Object):
+    def next_state(self, input):
+        if(input == "done"):
+            return state_search()
+        return self
+
+class state_search(Object):
+    def next_state(self, input):
+        if(input == "found"):
+            return state_move()
+        return self
+
+class state_move(Object):
+    def next_state(self, input):
+        if(input == "Done"):
+            return state_steady()
+        return self
+
+class state_steady(Object):
+    def next_state(self, input):
+        if(input == "OutOfPose"):
+            return state_move()
+        elif(input == "land"):
+            return state_land()
+        return self
+
+class state_land(Object):
+    def next_state(self, input):
+        if(input == "done"):
+            return state_rest()
+        return self
+
+
 def main(args=None):
     rclpy.init(args=args)
     sn  = TelloScriptNode()
     sn.sendTelloCommand("battery?")
 
+    input = "takeoff"
 
     while rclpy.ok():
         rclpy.spin_once(sn)
@@ -66,7 +108,7 @@ def main(args=None):
             else:
                 sn.get_logger().info('Service call failed %r' % (sn.future.exception(),))
 
-        #
+        sn.drone_state = sn.drone_state.next_state(input)
 
 
 
