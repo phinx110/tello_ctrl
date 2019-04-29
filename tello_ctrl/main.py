@@ -8,7 +8,6 @@ from geometry_msgs.msg import Twist
 from tello_msgs.srv import *
 
 
-
 class TelloScriptNode(Node):
 
     def __init__(self):
@@ -34,7 +33,7 @@ class TelloScriptNode(Node):
 
 
     def doTakeoff(self):
-        self.sendTelloCommand("takeoff")
+        #self.sendTelloCommand("takeoff")
         self.get_logger().info('takeoff')
 
     def doLand(self):
@@ -52,32 +51,31 @@ class TelloScriptNode(Node):
 
 ######     state machine     ######
 
-class state_rest(Object):
+class state_rest:
     def next_state(self, input):
-
         if(input == "takeoff"):
             return state_takeoff()
         return self
 
-class state_takeoff(Object):
+class state_takeoff:
     def next_state(self, input):
         if(input == "done"):
             return state_search()
         return self
 
-class state_search(Object):
+class state_search:
     def next_state(self, input):
         if(input == "found"):
             return state_move()
         return self
 
-class state_move(Object):
+class state_move:
     def next_state(self, input):
         if(input == "Done"):
             return state_steady()
         return self
 
-class state_steady(Object):
+class state_steady:
     def next_state(self, input):
         if(input == "OutOfPose"):
             return state_move()
@@ -85,7 +83,7 @@ class state_steady(Object):
             return state_land()
         return self
 
-class state_land(Object):
+class state_land:
     def next_state(self, input):
         if(input == "done"):
             return state_rest()
@@ -107,8 +105,7 @@ def main(args=None):
                 sn.get_logger().info('Result of drone: %d' %response.rc)
             else:
                 sn.get_logger().info('Service call failed %r' % (sn.future.exception(),))
-
-        sn.drone_state = sn.drone_state.next_state(input)
+    sn.drone_state = sn.drone_state.next_state(input)
 
 
 
