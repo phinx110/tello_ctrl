@@ -3,8 +3,8 @@ import rclpy
 from rclpy.node import Node
 
 from std_msgs.msg import String
+from std_msgs.msg import Char
 from geometry_msgs.msg import Twist
-##from tello_msgs.msg import TelloAction
 from tello_msgs.srv import *
 
 
@@ -18,6 +18,9 @@ class TelloScriptNode(Node):
         self.future = None
         self.drone_state = state_rest()
 
+        self.key_input = None
+        self.subs_key_input = self.create_subscription(Char, '/raw_keyboard',
+                                                       self.listener_callback)
 
         timer_period = 1  # seconds
         self.timer = self.create_timer(timer_period, self.timer_callback)
@@ -31,6 +34,10 @@ class TelloScriptNode(Node):
             self.doTakeoff()
         self.i += 1
 
+    def listener_callback(self, msg):
+        self.get_logger().info('received key: "%c"' % msg.data)
+
+        self.key_input = msg.data
 
     def doTakeoff(self):
         #self.sendTelloCommand("takeoff")
