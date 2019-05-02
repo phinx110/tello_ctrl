@@ -20,7 +20,7 @@ class TelloScriptNode(Node):
 
         self.key_input = None
         self.subs_key_input = self.create_subscription(Char, '/raw_keyboard',
-                                                       self.listener_callback)
+                                                       self.key_input_callback)
 
         timer_period = 1  # seconds
         self.timer = self.create_timer(timer_period, self.timer_callback)
@@ -34,7 +34,7 @@ class TelloScriptNode(Node):
             self.doTakeoff()
         self.i += 1
 
-    def listener_callback(self, msg):
+    def key_input_callback(self, msg):
         self.get_logger().info('received key: "%c"' % msg.data)
 
         self.key_input = msg.data
