@@ -28,11 +28,7 @@ class TelloScriptNode(Node):
 
 
     def timer_callback(self):
-        if(self.i % 2):
-            self.doLand()
-        else:
-            self.doTakeoff()
-        self.i += 1
+        sn.drone_state = sn.drone_state.next_state(input)
 
     def key_input_callback(self, msg):
         self.get_logger().info('received key: "%c"' % msg.data)
@@ -112,7 +108,7 @@ def main(args=None):
                 sn.get_logger().info('Result of drone: %d' %response.rc)
             else:
                 sn.get_logger().info('Service call failed %r' % (sn.future.exception(),))
-    sn.drone_state = sn.drone_state.next_state(input)
+    
 
 
 
