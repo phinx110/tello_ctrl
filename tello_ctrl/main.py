@@ -5,7 +5,11 @@ from rclpy.node import Node
 from std_msgs.msg import String
 from std_msgs.msg import Char
 from geometry_msgs.msg import Twist
+#from geometry_msgs.msg import TransformStamped
 from tello_msgs.srv import *
+
+from fiducial_vlam_msgs.msg import *
+
 
 
 class TelloScriptNode(Node):
@@ -25,14 +29,23 @@ class TelloScriptNode(Node):
         self.key_input = None
         self.subs_key_input = self.create_subscription(Char, '/raw_keyboard', self.key_input_callback)
 
-        self.timer_period = 0.4  # seconds
+        self.timer_period = 0.3  # seconds
         self.timer = self.create_timer(self.timer_period, self.timer_callback)
         self.tik = 0
+        
+        self.subs_observations = self.create_subscription(Observations, '/fiducial_observations', self.temp_callback)
+        self.ID_1_detected = False
+
+
+        
+    def temp_callback(self, msg):
+        for ob in msg.observations:
+            if(ob.id == 1):
+                self.ID_1_detected = True
 
 
     def timer_callback(self):
         self.tik = self.tik + 1
-
         self.drone_state = self.drone_state.next_state(self)
         self.response = None
         self.key_input = None
@@ -68,14 +81,14 @@ class TelloScriptNode(Node):
 
 class StateRest:
     def next_state(self, node):
-        print("StateRest: " + str(node.response))
+        print(str(node.tik)+" StateRest: " + str(node.response))
         if (node.key_input == 'q') and (node.response is None):
             return StateTakeoff()
         return self
 
 class StateTakeoff:
     def next_state(self, node):
-        print("StateTakeoff: " + str(node.response))
+        print(str(node.tik)+" StateTakeoff: " + str(node.response))
         if node.response is 1:
             return StateSteady()
         node.doTakeoff()
@@ -83,7 +96,7 @@ class StateTakeoff:
 
 class StateLand:
     def next_state(self, node):
-        print("StateLand: " + str(node.response))
+        print(str(node.tik)+" StateLand: " + str(node.response))
         if node.response is 1:
             return StateRest()
         node.doLand()
@@ -91,8 +104,9 @@ class StateLand:
 
 class StateSteady:
     def next_state(self, node):
-        print("StateSteady: " + str(node.response))
+        print(str(node.tik)+" StateSteady: " + str(node.response))
         if (node.key_input == 'q') and (node.response is None):
+            node.ID_1_detected = False
             return StateLand()
         if (node.key_input == 'w') and (node.response is None):
             return StateSearchAruco(node)
@@ -102,14 +116,19 @@ class StateSteady:
 class StateSearchAruco:
     
     def __init__(self, node):
-        self.search_until = node.tik + 5 / node.timer_period
+        self.search_until = node.tik + 18 / node.timer_period
         #self.searching = False
         self.twist = Twist()
-        self.twist.linear.z = 0.2
-        self.twist.angular.z = 1.0
+        self.twist.linear.z = 0.15
+        self.twist.angular.z = 0.8
 
     def next_state(self, node):
         print("StateSearchAruco: " + str(node.response))
+
+        if node.ID_1_detected:
+            node.pub_twist.publish(Twist())
+            return StateSteady()
+
         if node.tik <= self.search_until:
             node.pub_twist.publish(self.twist)
             return self
